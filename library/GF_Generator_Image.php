@@ -43,6 +43,33 @@ class GF_Generator_Image
 		$this->img = $im;
 	}
 
+	public function createBackgroundFromUrlImage($url)
+	{
+		$size = getimagesize($url);
+
+		switch($size["mime"]){
+			case "image/jpeg":
+				$im = imagecreatefromjpeg($url);
+				break;
+			case "image/gif":
+				$im = imagecreatefromgif($url);
+				break;
+			case "image/png":
+				$im = imagecreatefrompng($url);
+				break;
+			default:
+				$im=false;
+				break;
+		}
+
+		$this->img = $im;
+
+		if ($this->img === false) {
+			trigger_error('Unable to open image');
+			exit();
+		}
+	}
+
 	// Create the image
 	public function createBackgroundImage($filled = true)
 	{
