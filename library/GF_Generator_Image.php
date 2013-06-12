@@ -108,5 +108,29 @@ class GF_Generator_Image
 		imagepng($this->img);
 		imagedestroy($this->img);
 	}
+
+	public function renderCachedImage()
+	{
+		session_start();
+
+		if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+			// send the last mod time of the file back
+			header("Last-Modified: " . gmdate("D, d M Y H:i:s", time() - $offset) . " GMT",true, 304);
+			exit;
+		}else{
+			$offset = 60 * 60 * 24 * 14; //14 Days
+			$ExpStr = "Expires: " . gmdate("D, d M Y H:i:s", time() + $offset) . " GMT";
+			header($ExpStr); //Set a far future expire date. This keeps the image locally cached by the user for less hits to the server.
+			header('Cache-Control:	max-age=120');
+			header("Last-Modified: " . gmdate("D, d M Y H:i:s", time() - $offset) . " GMT");
+
+			header('Content-Type: image/png');
+
+			// Using imagepng() results in clearer text compared with imagejpeg()
+			imagepng($this->img);
+			imagedestroy($this->img);
+		}
+
+	}
 }
 ?>
