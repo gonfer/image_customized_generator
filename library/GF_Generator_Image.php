@@ -134,5 +134,56 @@ class GF_Generator_Image
 		}
 
 	}
+
+	public function generateImageFile($image_path )
+	{
+		try {
+			imagepng($this->img, $image_path);
+		} catch (Exception $e) {
+			echo 'Caught exception: ',  $e->getMessage(), "\n";
+			exit;
+		}
+	}
+
+	public function generateThumbImageFile($image_path, $maxSize = 100)
+	{
+		try {
+			$width = imagesx($this->img);
+			$height = imagesy($this->img);
+
+			// Calculate aspect ratio
+			$wRatio = $maxSize / $width;
+			$hRatio = $maxSize / $height;
+
+			// Calculate a proportional width and height no larger than the max size.
+			if ( ($width <= $maxSize) && ($height <= $maxSize) )
+			{
+				// Input is smaller than thumbnail, do nothing
+				imagepng($this->img, $image_path);
+			}
+			elseif ( ($wRatio * $height) < $maxSize )
+			{
+				// Image is horizontal
+				$new_height = ceil($wRatio * $height);
+				$new_width  = $maxSize;
+			}
+			else
+			{
+				// Image is vertical
+				$new_width  = ceil($hRatio * $width);
+				$new_height = $maxSize;
+			}
+
+			$image_p = imagecreatetruecolor($new_width, $new_height);
+
+			imagecopyresampled($image_p, $this->img, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
+
+			imagepng($image_p, $image_path);
+
+		} catch (Exception $e) {
+			echo 'Caught exception: ',  $e->getMessage(), "\n";
+			exit;
+		}
+	}
 }
 ?>
