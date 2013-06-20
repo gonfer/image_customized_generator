@@ -71,9 +71,28 @@ class GF_Generator_Text
 		return $this->textangle;
 	}
 
-	public function addTextToGivenImage($im)
+    public function setFontColor($im, $color)
+    {
+        if($color == 'white')
+        {
+            $this->font_color = imagecolorallocate($im, 255, 255, 255);
+        }
+
+        if($color == 'black')
+        {
+            $this->font_color = imagecolorallocate($im, 0, 0, 0);
+        }
+    }
+
+    public function getFontColor()
+    {
+        return $this->font_color;
+    }
+
+	public function addTextToGivenImage($im, $color)
 	{
-		$this->font_color = imagecolorallocate($im, 0, 0, 0);
+        $this->setFontColor($im, $color);
+		//$this->font_color = imagecolorallocate($im, 0, 0, 0);
 		/*
 			// Break it up into pieces 125 characters long
 		$lines = explode('|', wordwrap($this->getText(), 15, '|'));
@@ -88,12 +107,11 @@ class GF_Generator_Text
 			$y += 23;
 		}
 */
-		imagettftext($im, $this->font_size, $this->getAngle(), $this->getXOrdinate(), $this->getYOrdinate(), $this->font_color, $this->font, $this->getText());
+		imagettftext($im, $this->font_size, $this->getAngle(), $this->getXOrdinate(), $this->getYOrdinate(), $this->getFontColor(), $this->font, $this->getText());
 	}
 
 	protected function createBoundingBox()
 	{
-		// First we create our bounding box for the first text
 		$this->setBBox(imagettfbbox($this->font_size, $this->getAngle(), $this->font, $this->getText()));
 	}
 
@@ -101,9 +119,8 @@ class GF_Generator_Text
 	{
 		if($this->debug)
 		{
-			imagettftext($im, 9, 0, 2, 23, $this->font_color, $this->font, $text);
+			imagettftext($im, 9, 0, 2, 23, imagecolorallocate($im, 0, 0, 0), $this->font, $text);
 		}
-
 	}
 
 	public function setCoordinatesForCenteredText($img)
@@ -112,26 +129,50 @@ class GF_Generator_Text
 
 		$bbox = $this->getBBox();
 
-		$half_image_x = imagesx($img) / 2;
+        $the_box = $this->calculateTextBox();
+
+        $half_image_x = imagesx($img) / 2;
 		$half_image_y = imagesy($img) / 2;
 
-		$half_text_x = abs($bbox[2] / 2);
-		$half_text_y = abs($bbox[5] / 2);
+        $half_text_y = $the_box["middle_height"];
+        $half_text_x = $the_box["middle_width"];
 
-
-		$x_text_in_image = abs($half_image_x) - $half_text_x;
-		$y_text_in_image = abs($half_image_y) - $half_text_y;
-//
-		$x = $x_text_in_image;
-		$y = $y_text_in_image;
+        $x = abs($half_image_x) - $half_text_x;
+        $y = abs($half_image_y) + $half_text_y;
 
 		$this->setXOrdinate($x);
 		$this->setYOrdinate($y);
 
 
-		$textdebug = "Tamaño Imagen x: ".imagesx($img)."\nTamaño Imagen y: ".imagesy($img)."\nMitad Img x: ".$half_image_x."\nMitad Img y: ".$half_image_y."\nMitad txt x: ".$half_text_x."\nMitad txt y: ".$half_text_y."\nX txt en img: ".$x_text_in_image."\nY txt en img: ".$y_text_in_image."\nCoordenadas Texto: ".print_r($bbox,true);
+		$textdebug = "Tamaño Imagen x: ".imagesx($img)."\nTamaño Imagen y: ".imagesy($img)."\nMitad Img x: ".$half_image_x."\nMitad Img y: ".$half_image_y."\nMitad txt x: ".$half_text_x."\nMitad txt y: ".$half_text_y."\nX txt en img: ".$x_text_in_image."\nY txt en img: ".$y_text_in_image."\nCoordenadas Texto: ".print_r($bbox,true)."\n the box: ".print_r($the_box,true);
 
 		$this->addDebugText($img, $textdebug);
 	}
 
+
+    function calculateTextBox()
+    {
+        /************
+        simple function that calculates the *exact* bounding box (single pixel precision).
+        The function returns an associative array with these keys:
+        left, top:  coordinates you will pass to imagettftext
+        width, height: dimension of the image you have to create
+         *************/
+        $rect = $this->getBBox();
+        $minX = min(array($rect[0],$rect[2],$rect[4],$rect[6]));
+        $maxX = max(array($rect[0],$rect[2],$rect[4],$rect[6]));
+        $minY = min(array($rect[1],$rect[3],$rect[5],$rect[7]));
+        $maxY = max(array($rect[1],$rect[3],$rect[5],$rect[7]));
+
+        return array(
+            "left"   => abs($minX) - 1,
+            "top"    => abs($minY) - 1,
+            "width"  => $maxX - $minX,
+            "height" => $maxY - $minY,
+            "middle_width_bbox" => ($maxX - $minX)/2,
+            "middle_height_bbox" => ($maxY - $minY)/2,
+            "middle_width" => abs($minX) + ($maxX - $minX)/2,
+            "middle_height" => abs($minY) - ($maxY - $minY)/2
+        );
+    }
 }
